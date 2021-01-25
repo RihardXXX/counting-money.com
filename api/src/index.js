@@ -5,7 +5,7 @@ const axios = require('axios')
 const { connectDB } = require('./helper/db') // импортируем мангус
 const { port, host, db, authApiUrl } = require('./configuration') // импортируем хост и порт
 //
-const a = 5
+const a = 54
 const startServer = () => {
     app.listen(port, () => {
         // слушаем 3000 порт и запускаем колбек
