@@ -1,0 +1,28 @@
+version: '3'
+#  hdhdh
+services:
+    frontend:
+        build: # билд папки для фронтенда
+            context: ./frontend
+            dockerfile: Dockerfile.dev
+        command: npm run serve # запуск фронтенда в дев режиме
+        environment:
+            - CHOKIDAR_USEPOLLING=true
+        stdin_open: true # чтобы сработало автоматическое обновление страницы при изменении в коде и сохранении
+        tty: true # аналогично работает как и вышеуказанная команда
+        volumes:
+            - ./frontend/src:/usr/src/app/src # проект
+
+    api:
+        command: npm run dev
+        volumes:
+            - ./api/src:/usr/src/app/src
+
+    auth:
+        command: npm run dev
+        volumes:
+            - ./auth/src:/usr/src/app/src
+
+    nginx:
+        volumes:
+            - ./nginx/nginx.conf.dev:/etc/nginx/conf.d/nginx.conf

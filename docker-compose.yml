@@ -1,0 +1,102 @@
+version: '3' # версия докера
+#=============================================================
+# Для запуска контейнера команда
+#docker-compose up --build
+
+# Для запуска докера в дев режиме
+#docker-compose -f docker-compose.yml -f docker-compose.development.yml up --build
+
+# Запущенные процессы посмотреть
+# docker ps
+
+# войти внутрь определнного контейнера чтобы накатить что-нибудь в контейнер
+# docker exec -it realworld-docker-api sh
+
+# чтобы посмотреть сети
+# docker networl ls
+
+#=================================================================
+services: # сервисы
+    frontend: # название в запросе будет http://frontend:3000
+        build: # билд папки для фронтенда
+            context: ./frontend
+            dockerfile: Dockerfile.prod
+        container_name: realworld-docker-frontend # имя контейнера для фронтенда
+        command: serve -s dist -l 3000 # команда для запуска сервера который будет продакшен папку обрабатывать
+        # ports:
+        #     - '3000:8080' # на компе будет 3000 порт а на докере 8080 потому что vue js
+        restart: unless-stopped # если вдруг контейнер упал, то докер заново попробует запустить контейнер
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+    api: # папка api
+        build: ./api # сборка linux образа с нодой внутри
+        container_name: realworld-docker-api # имя контейнера
+        command: npm run start # команда которая выполнится при старте докер компоуза
+        restart: unless-stopped # если вдруг контейнер упал, то докер заново попробует запустить контейнер
+        # ports:
+        #     - '3001:3001' # слева порт нашей машины, а справа порт контейнера
+        environment:
+            - PORT=3001 # это переменные окружения
+            # - HOST=http://counting-money.com # наш продакшен хост
+            - MONGO_URL=mongodb://api_db:27017/api # хост нашего сервиса нижнего образа api_db: дальше порт 27017 дальше Бд
+            - AUTH_API_URL=http://auth:3002 # переменная окружения куда будет обращаться аpi
+        depends_on:
+            - api_db # говорим, что в начале запускаем БД, а потом сервер
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+    auth: # сервис авторизации
+        build: ./auth # папка с которой она работает
+        container_name: realworld-docker-auth # имя контейнера
+        command: npm run start # команда для запуска сущности внутри контейнера
+        restart: unless-stopped # # если вдруг контейнер упал, то докер заново попробует запустить контейнер
+        # ports:
+        #     - '3002:3002' # порты работы
+        environment:
+            - PORT=3002
+            # - HOST=http://counting-money.com # наш продакшен хост
+            - MONGO_URL=mongodb://auth_db:27017/auth # хост нашего сервиса нижнего образа api_db: дальше порт 27017 дальше Бд
+            - API_URL=http://api:3001 # переменная окружения куда будет обращаться аpi
+        depends_on:
+            - auth_db # запускаем в начале БД для авторизации, который создали выше
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+    api_db: # база данных  для сервиса api
+        image: mongo:latest # автоматически скачается последняя версия mongo с dockerhub
+        container_name: realworld-docker-api-db # имя контейнера c БД
+        volumes: # сущность отдельная от контейнера
+            - mongodb_api:/data/db # на линуксе по этому пути
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+    auth_db: # база данных  для сервиса авторизации
+        image: mongo:latest #
+        container_name: realworld-docker-auth-db
+        volumes:
+            - mongodb_auth:/data/db
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+    nginx: # все запросы идут к нему на 80 порт а он дальше сортирует
+        image: nginx:stable-alpine # образ nginx который будет работать
+        container_name: realworld-docker-nginx # имя контейнар с энджинксом
+        ports:
+            - '80:80' # внутри контейнера и снаружи контейнера будет 80 порт
+        volumes:
+            - ./nginx/nginx.conf.prod:/etc/nginx/conf.d/nginx.conf # файл для продакшина ./nginx/nginx.conf.prod автоматически поместим  /etc/nginx/conf.d/nginx.conf
+        depends_on:
+            - frontend # сервис фронтенда чтобы был раньше доступен чем nginx а то nginx упадёт
+            - api
+            - auth # чтобы сервисы серверов заранее запускались
+        networks: # в какой сети контейнер подключаем
+            - realworld-docker-network
+
+volumes:
+    mongodb_api: # эта запись позволяет использовать в любом сервисе где это нужно
+    mongodb_auth: # эта запись позволяет использовать в любом сервисе где это нужно
+
+networks: # сеть докера
+    realworld-docker-network:
+        driver: bridge
