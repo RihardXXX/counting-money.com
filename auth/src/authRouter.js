@@ -4,12 +4,12 @@ const User = require('./models/User') // импортируем модель п�
 const bcrypt = require('bcryptjs') // криптография пароля
 const jwt = require('jsonwebtoken') // подключение пакета токена
 const { check, validationResult } = require('express-validator') // экпресс валидатор
-const { secretKey } = require('./configuration')
+const authMiddleware = require('./middleware')
 
 // функция генерации токена
 const generateToken = (id, email) => {
     const payload = { id, email }
-    return jwt.sign(payload, secretKey, { expiresIn: '9000h' }) // генерация токена и сколько жить будет
+    return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', { expiresIn: '9000h' }) // генерация токена и сколько жить будет
 }
 
 //роут регистрации '/auth/register'
@@ -23,7 +23,7 @@ router.post(
     ],
     async function registration(req, res) {
         try {
-            const errors = validationResult(req) // ошибки для мидлвере
+            const errors = validationResult(req.body.user) // ошибки для мидлвере
 
             if (!errors.isEmpty()) {
                 // если ошибки при валидации
@@ -31,7 +31,7 @@ router.post(
             }
 
             // вытаскиваем имя, почту и пароль с тела запроса
-            const { email, password, username } = req.body
+            const { email, password, username } = req.body.user
 
             const candidate = await User.findOne({ email })
             if (candidate) {
@@ -105,6 +105,23 @@ router.post('/login', async function login(req, res) {
 })
 
 router.get('/users', async function getUsers(req, res) {
+    try {
+        // Распечатка списка пользователей и 3 пользователя
+        const currentUsers = []
+        User.find(function (err, users) {
+            if (err) return console.error(err)
+            // console.log(users, '======', users[2])
+            console.log(users)
+            currentUsers = users
+        })
+        console.log(currentUsers)
+        res.json({ result: 'ss' })
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+router.get('/admin', authMiddleware, async function getUsers(req, res) {
     try {
         // Распечатка списка пользователей и 3 пользователя
         User.find(function (err, users) {
