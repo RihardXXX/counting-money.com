@@ -59,7 +59,9 @@ router.post(
       })
 
       await user.save() // сохраняем пользователя
-      return res.json({ message: 'пользователь успешно зарегистрирован' })
+      return res.json({
+        message: 'Вы зарегистрированы, авторизуйтесь пожалуйста по почте и паролю',
+      })
     } catch (error) {
       console.log(error)
       res.status(400).json({
@@ -72,7 +74,7 @@ router.post(
 
 router.post('/login', async function login(req, res) {
   try {
-    const { email, password } = req.body
+    const { email, password } = req.body.user
 
     const user = await User.findOne({ email }) // если есть пользователь с Этой почтой то возвращаем его
 
