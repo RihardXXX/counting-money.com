@@ -9,7 +9,7 @@ const authMiddleware = require('./middleware')
 // функция генерации токена
 const generateToken = (id, email) => {
   const payload = { id, email }
-  return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', { expiresIn: '9000h' }) // генерация токена и сколько жить будет
+  return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', { expiresIn: '90000h' }) // генерация токена и сколько жить будет
 }
 
 //роут регистрации '/auth/register'
@@ -72,7 +72,7 @@ router.post(
   }
 )
 
-router.post('/login', async function login(req, res) {
+router.post('/login', authMiddleware, async function login(req, res) {
   try {
     const { email, password } = req.body.user
 
@@ -96,7 +96,7 @@ router.post('/login', async function login(req, res) {
 
     const token = generateToken(user._id, user.email) // генерируем токен
 
-    return res.json({ token }) // возвращаем токен
+    return res.json({ token, user }) // возвращаем токен
   } catch (error) {
     console.log(error)
     res.status(400).json({
@@ -106,20 +106,27 @@ router.post('/login', async function login(req, res) {
   }
 })
 
-router.get('/users', async function getUsers(req, res) {
+router.get('/user', async function getUsers(req, res) {
   try {
-    // Распечатка списка пользователей и 3 пользователя
-    const currentUsers = []
-    User.find(function (err, users) {
-      if (err) return console.error(err)
-      // console.log(users, '======', users[2])
-      console.log(users)
-      currentUsers = users
+    console.log('hello')
+    console.log(req.headers.authorization)
+    const token = req.headers.authorization.split(' ')[1]
+    if (!token) {
+      return res.status(403).json({ message: 'пользователь не авторизован' })
+    }
+
+    //тут id и email пользователя
+    const payload = jwt.verify(token, 'hhndndhcyhcjcjmn364734673g5hj565jgb6')
+    // const user = await User.findOne({ payload.email })
+    const email = payload.email
+    const user = await User.findOne({ email })
+
+    res.json({
+      user,
     })
-    console.log(currentUsers)
-    res.json({ result: 'ss' })
   } catch (error) {
     console.log(error)
+    return res.status(403).json({ message: 'пользователь не авторизован' })
   }
 })
 
