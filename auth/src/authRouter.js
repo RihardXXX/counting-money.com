@@ -72,7 +72,7 @@ router.post(
   }
 )
 
-router.post('/login', authMiddleware, async function login(req, res) {
+router.post('/login', async function login(req, res) {
   try {
     const { email, password } = req.body.user
 
@@ -106,10 +106,55 @@ router.post('/login', authMiddleware, async function login(req, res) {
   }
 })
 
+// router.post('/addarticle', async function login(req, res) {
+//   try {
+//     const { text } = req.body.article
+//     const { user } = req.body.user
+
+//     const token = req.headers.authorization.split(' ')[1]
+//     if (!token) {
+//       return res.status(403).json({ message: 'пользователь не авторизован' })
+//     }
+
+//     //тут id и email пользователя
+//     const payload = jwt.verify(token, 'hhndndhcyhcjcjmn364734673g5hj565jgb6')
+//     // const user = await User.findOne({ payload.email })
+//     const email = payload.email
+//     const user = await User.findOne({ email })
+
+//     // const user = await User.findOne({ email }) // если есть пользователь с Этой почтой то возвращаем его
+
+//     // if (!user) {
+//     //   return res
+//     //     .status(400)
+//     //     .json({ message: `Пользователь с ${email} электронной почтой не найден` })
+//     // }
+
+//     // // сравнение паролей входящего и пользователя
+//     // const validPassword = bcrypt.compareSync(password, user.password)
+
+//     // if (!validPassword) {
+//     //   // если пароли введеный и с БД не совпадают
+//     //   return res.status(400).json({
+//     //     message: `введённый вами пароль ${password} неверный, пожалуйста введите друго пароль`,
+//     //   })
+//     // }
+
+//     // const token = generateToken(user._id, user.email) // генерируем токен
+
+//     // return res.json({ token, user }) // возвращаем токен
+//   } catch (error) {
+//     console.log(error)
+//     res.status(400).json({
+//       message: 'Login error',
+//       error: error,
+//     })
+//   }
+// })
+
 router.get('/user', async function getUsers(req, res) {
   try {
-    console.log('hello')
-    console.log(req.headers.authorization)
+    // ['Token', 'eyJhbGciOiJIUzI1Ni']
     const token = req.headers.authorization.split(' ')[1]
     if (!token) {
       return res.status(403).json({ message: 'пользователь не авторизован' })
@@ -130,20 +175,20 @@ router.get('/user', async function getUsers(req, res) {
   }
 })
 
-router.get('/admin', authMiddleware, async function getUsers(req, res) {
-  try {
-    // Распечатка списка пользователей и 3 пользователя
-    User.find(function (err, users) {
-      if (err) return console.error(err)
-      // console.log(users, '======', users[2])
-      users.forEach((element) => {
-        console.log(element)
-      })
-    })
-    res.json(' server work')
-  } catch (error) {
-    console.log(error)
-  }
-})
+// router.get('/admin', authMiddleware, async function getUsers(req, res) {
+//   try {
+//     // Распечатка списка пользователей и 3 пользователя
+//     User.find(function (err, users) {
+//       if (err) return console.error(err)
+//       // console.log(users, '======', users[2])
+//       users.forEach((element) => {
+//         console.log(element)
+//       })
+//     })
+//     res.json(' server work')
+//   } catch (error) {
+//     console.log(error)
+//   }
+// })
 
 module.exports = router
