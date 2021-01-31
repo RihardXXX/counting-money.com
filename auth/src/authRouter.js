@@ -9,7 +9,9 @@ const authMiddleware = require('./middleware')
 // функция генерации токена
 const generateToken = (id, email) => {
   const payload = { id, email }
-  return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', { expiresIn: '90000h' }) // генерация токена и сколько жить будет
+  return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', {
+    expiresIn: '90000h',
+  }) // генерация токена и сколько жить будет
 }
 
 //роут регистрации '/auth/register'
@@ -17,9 +19,18 @@ router.post(
   '/register',
   [
     // работает как мидлвере
-    check('username', 'заполните пожалуйста имя пользователя').notEmpty(),
-    check('email', 'заполните пожалуйста электронную почту').notEmpty(),
-    check('password', 'пароль не должен быть короче 8 символов').isLength({ min: 8, max: 100 }),
+    check(
+      'username',
+      'заполните пожалуйста имя пользователя'
+    ).notEmpty(),
+    check(
+      'email',
+      'заполните пожалуйста электронную почту'
+    ).notEmpty(),
+    check(
+      'password',
+      'пароль не должен быть короче 8 символов'
+    ).isLength({ min: 8, max: 100 }),
   ],
   async function registration(req, res) {
     try {
@@ -27,7 +38,9 @@ router.post(
 
       if (!errors.isEmpty()) {
         // если ошибки при валидации
-        return res.status(400).json({ message: 'ошибка регистрации', errors })
+        return res
+          .status(400)
+          .json({ message: 'ошибка регистрации', errors })
       }
 
       // вытаскиваем имя, почту и пароль с тела запроса
@@ -60,7 +73,8 @@ router.post(
 
       await user.save() // сохраняем пользователя
       return res.json({
-        message: 'Вы зарегистрированы, авторизуйтесь пожалуйста по почте и паролю',
+        message:
+          'Вы зарегистрированы, авторизуйтесь пожалуйста по почте и паролю',
       })
     } catch (error) {
       console.log(error)
@@ -79,9 +93,9 @@ router.post('/login', async function login(req, res) {
     const user = await User.findOne({ email }) // если есть пользователь с Этой почтой то возвращаем его
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ message: `Пользователь с ${email} электронной почтой не найден` })
+      return res.status(400).json({
+        message: `Пользователь с ${email} электронной почтой не найден`,
+      })
     }
 
     // сравнение паролей входящего и пользователя
@@ -106,62 +120,47 @@ router.post('/login', async function login(req, res) {
   }
 })
 
-// router.post('/addarticle', async function login(req, res) {
-//   try {
-//     const { text } = req.body.article
-//     const { user } = req.body.user
+router.post('/addarticle', async function addArticle(req, res) {
+  try {
+    const { email, article } = req.body
+    const token = req.headers.authorization.split(' ')[1]
+    //проверка токена
+    const payload = jwt.verify(
+      token,
+      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
+    )
+    // проверка почты
+    if (payload.email === email) {
+      // почту с токена сравниваем с почтой пользователя
+      const user = await User.findOne({ email }) // находим пользователя
+      user.userData.push(article)
+      console.log(user)
+      res.status(200).json({
+        message: 'add article',
+      })
+    }
 
-//     const token = req.headers.authorization.split(' ')[1]
-//     if (!token) {
-//       return res.status(403).json({ message: 'пользователь не авторизован' })
-//     }
-
-//     //тут id и email пользователя
-//     const payload = jwt.verify(token, 'hhndndhcyhcjcjmn364734673g5hj565jgb6')
-//     // const user = await User.findOne({ payload.email })
-//     const email = payload.email
-//     const user = await User.findOne({ email })
-
-//     // const user = await User.findOne({ email }) // если есть пользователь с Этой почтой то возвращаем его
-
-//     // if (!user) {
-//     //   return res
-//     //     .status(400)
-//     //     .json({ message: `Пользователь с ${email} электронной почтой не найден` })
-//     // }
-
-//     // // сравнение паролей входящего и пользователя
-//     // const validPassword = bcrypt.compareSync(password, user.password)
-
-//     // if (!validPassword) {
-//     //   // если пароли введеный и с БД не совпадают
-//     //   return res.status(400).json({
-//     //     message: `введённый вами пароль ${password} неверный, пожалуйста введите друго пароль`,
-//     //   })
-//     // }
-
-//     // const token = generateToken(user._id, user.email) // генерируем токен
-
-//     // return res.json({ token, user }) // возвращаем токен
-//   } catch (error) {
-//     console.log(error)
-//     res.status(400).json({
-//       message: 'Login error',
-//       error: error,
-//     })
-//   }
-// })
+    // добавление статьи в модели
+  } catch (error) {
+    console.log(error)
+  }
+})
 
 router.get('/user', async function getUsers(req, res) {
   try {
     // ['Token', 'eyJhbGciOiJIUzI1Ni']
     const token = req.headers.authorization.split(' ')[1]
     if (!token) {
-      return res.status(403).json({ message: 'пользователь не авторизован' })
+      return res
+        .status(403)
+        .json({ message: 'пользователь не авторизован' })
     }
 
     //тут id и email пользователя
-    const payload = jwt.verify(token, 'hhndndhcyhcjcjmn364734673g5hj565jgb6')
+    const payload = jwt.verify(
+      token,
+      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
+    )
     // const user = await User.findOne({ payload.email })
     const email = payload.email
     const user = await User.findOne({ email })
@@ -171,7 +170,9 @@ router.get('/user', async function getUsers(req, res) {
     })
   } catch (error) {
     console.log(error)
-    return res.status(403).json({ message: 'пользователь не авторизован' })
+    return res
+      .status(403)
+      .json({ message: 'пользователь не авторизован' })
   }
 })
 
