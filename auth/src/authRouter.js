@@ -9,9 +9,13 @@ const authMiddleware = require('./middleware')
 // функция генерации токена
 const generateToken = (id, email) => {
   const payload = { id, email }
-  return jwt.sign(payload, 'hhndndhcyhcjcjmn364734673g5hj565jgb6', {
-    expiresIn: '90000h',
-  }) // генерация токена и сколько жить будет
+  return jwt.sign(
+    payload,
+    'hhndndhcyhcjcjmn364734673g5hj565jgb6',
+    {
+      expiresIn: '90000h',
+    }
+  ) // генерация токена и сколько жить будет
 }
 
 //роут регистрации '/auth/register'
@@ -99,7 +103,10 @@ router.post('/login', async function login(req, res) {
     }
 
     // сравнение паролей входящего и пользователя
-    const validPassword = bcrypt.compareSync(password, user.password)
+    const validPassword = bcrypt.compareSync(
+      password,
+      user.password
+    )
 
     if (!validPassword) {
       // если пароли введеный и с БД не совпадают
@@ -176,20 +183,33 @@ router.get('/user', async function getUsers(req, res) {
   }
 })
 
-// router.get('/admin', authMiddleware, async function getUsers(req, res) {
-//   try {
-//     // Распечатка списка пользователей и 3 пользователя
-//     User.find(function (err, users) {
-//       if (err) return console.error(err)
-//       // console.log(users, '======', users[2])
-//       users.forEach((element) => {
-//         console.log(element)
-//       })
-//     })
-//     res.json(' server work')
-//   } catch (error) {
-//     console.log(error)
-//   }
-// })
+router.get('/articles', async function (req, res) {
+  try {
+    const token = req.headers.authorization.split(' ')[1]
+    if (!token) {
+      return res
+        .status(403)
+        .json({ message: 'пользователь не авторизован' })
+    }
+
+    //тут id и email пользователя
+    const payload = jwt.verify(
+      token,
+      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
+    )
+    // const user = await User.findOne({ payload.email })
+    const email = payload.email
+    const user = await User.findOne({ email })
+    const { userData } = user
+
+    res.status(200).json({
+      articles: userData,
+    })
+  } catch (error) {
+    return res.status(403).json({
+      message: 'error',
+    })
+  }
+})
 
 module.exports = router
