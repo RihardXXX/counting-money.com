@@ -203,7 +203,7 @@ router.get('/articles', async function (req, res) {
     const { userData } = user
 
     res.status(200).json({
-      articles: userData,
+      userData,
     })
   } catch (error) {
     return res.status(403).json({
