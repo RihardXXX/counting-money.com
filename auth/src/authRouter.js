@@ -129,23 +129,25 @@ router.post('/login', async function login(req, res) {
 
 router.post('/addarticle', async function addArticle(req, res) {
   try {
-    const { email, article } = req.body
+    const { article } = req.body
     const token = req.headers.authorization.split(' ')[1]
     //проверка токена
     const payload = jwt.verify(
       token,
       'hhndndhcyhcjcjmn364734673g5hj565jgb6'
     )
-    // проверка почты
-    if (payload.email === email) {
-      // почту с токена сравниваем с почтой пользователя
-      const user = await User.findOne({ email }) // находим пользователя
-      user.userData.push(article)
-      console.log(user)
-      res.status(200).json({
-        message: 'add article',
-      })
-    }
+
+    const email = payload.email
+    const user = await User.findOne({ email }) // находим пользователя
+    user.userData.push(article)
+    await user.save()
+
+    const data = user.userData
+    console.log(data)
+
+    res.status(200).json({
+      data,
+    })
 
     // добавление статьи в модели
   } catch (error) {
