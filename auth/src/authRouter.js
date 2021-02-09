@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs') // криптография пароля
 const jwt = require('jsonwebtoken') // подключение пакета токена
 const { check, validationResult } = require('express-validator') // экпресс валидатор
 const authMiddleware = require('./middleware')
+const { connectDB } = require('../src/helper/db') // импортируем мангус
 
 // функция генерации токена
 const generateToken = (id, email) => {
@@ -142,11 +143,10 @@ router.post('/addarticle', async function addArticle(req, res) {
     user.userData.push(article)
     await user.save()
 
-    const data = user.userData
-    console.log(data)
+    const userData = user.userData
 
     res.status(200).json({
-      data,
+      userData,
     })
 
     // добавление статьи в модели
@@ -154,6 +154,43 @@ router.post('/addarticle', async function addArticle(req, res) {
     console.log(error)
   }
 })
+
+router.post(
+  '/deletearticle',
+  async function addArticle(req, res) {
+    try {
+      const { id } = req.body
+      console.log(id)
+      const token = req.headers.authorization.split(' ')[1]
+      //проверка токена
+      const payload = jwt.verify(
+        token,
+        'hhndndhcyhcjcjmn364734673g5hj565jgb6'
+      )
+
+      const email = payload.email
+      const user = await User.findOne({ email }) // находим пользователя
+      user.userData.pull({ _id: id })
+      await user.save()
+      // mongoose.set('returnOriginal', false) // полумать что делать тут
+      // const user = await User.findOneAndUpdate(
+      //   { email: email },
+      //   { $pull: { userData: { _id: id } } },
+      //   { returnNewDocument: true }
+      // )
+
+      const { userData } = user
+
+      res.status(200).json({
+        userData,
+      })
+
+      // добавление статьи в модели
+    } catch (error) {
+      console.log(error)
+    }
+  }
+)
 
 router.get('/user', async function getUsers(req, res) {
   try {
