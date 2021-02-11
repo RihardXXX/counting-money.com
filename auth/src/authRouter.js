@@ -4,10 +4,8 @@ const User = require('./models/User') // импортируем модель п�
 const bcrypt = require('bcryptjs') // криптография пароля
 const jwt = require('jsonwebtoken') // подключение пакета токена
 const { check, validationResult } = require('express-validator') // экпресс валидатор
-const authMiddleware = require('./middleware')
-const { connectDB } = require('../src/helper/db') // импортируем мангус
 
-// функция генерации токена
+// function generation token
 const generateToken = (id, email) => {
   const payload = { id, email }
   return jwt.sign(
@@ -16,7 +14,34 @@ const generateToken = (id, email) => {
     {
       expiresIn: '90000h',
     }
-  ) // генерация токена и сколько жить будет
+  )
+}
+
+// authorization middleware
+const authMiddleware = (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1]
+    if (!token) {
+      return res
+        .status(403)
+        .json({ message: 'пользователь не авторизован' })
+    }
+
+    //тут id и email пользователя
+    const payload = jwt.verify(
+      token,
+      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
+    )
+
+    req.payload = payload
+
+    next()
+  } catch (error) {
+    console.log(error)
+    return res
+      .status(403)
+      .json({ message: 'пользователь не авторизован' })
+  }
 }
 
 //роут регистрации '/auth/register'
@@ -128,127 +153,89 @@ router.post('/login', async function login(req, res) {
   }
 })
 
-router.post('/addarticle', async function addArticle(req, res) {
-  try {
-    const { article } = req.body
-    const token = req.headers.authorization.split(' ')[1]
-    //проверка токена
-    const payload = jwt.verify(
-      token,
-      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
-    )
-
-    const email = payload.email
-    const user = await User.findOne({ email }) // находим пользователя
-    user.userData.push(article)
-    await user.save()
-
-    const userData = user.userData
-
-    res.status(200).json({
-      userData,
-    })
-
-    // добавление статьи в модели
-  } catch (error) {
-    console.log(error)
-  }
-})
-
+// add article
 router.post(
-  '/deletearticle',
+  '/addarticle',
+  authMiddleware,
   async function addArticle(req, res) {
     try {
-      const { id } = req.body
-      console.log(id)
-      const token = req.headers.authorization.split(' ')[1]
-      //проверка токена
-      const payload = jwt.verify(
-        token,
-        'hhndndhcyhcjcjmn364734673g5hj565jgb6'
-      )
-
-      const email = payload.email
+      const email = req.payload.email
       const user = await User.findOne({ email }) // находим пользователя
-      user.userData.pull({ _id: id })
+      const { article } = req.body
+      user.userData.push(article)
       await user.save()
-      // mongoose.set('returnOriginal', false) // полумать что делать тут
-      // const user = await User.findOneAndUpdate(
-      //   { email: email },
-      //   { $pull: { userData: { _id: id } } },
-      //   { returnNewDocument: true }
-      // )
 
-      const { userData } = user
+      const userData = user.userData
 
       res.status(200).json({
         userData,
       })
-
-      // добавление статьи в модели
     } catch (error) {
       console.log(error)
     }
   }
 )
 
-router.get('/user', async function getUsers(req, res) {
-  try {
-    // ['Token', 'eyJhbGciOiJIUzI1Ni']
-    const token = req.headers.authorization.split(' ')[1]
-    if (!token) {
+router.post(
+  '/deletearticle',
+  authMiddleware,
+  async function deleteArticle(req, res) {
+    try {
+      const email = req.payload.email
+      const user = await User.findOne({ email }) // находим пользователя
+      const { id } = req.body
+      user.userData.pull({ _id: id })
+      await user.save()
+
+      const { userData } = user
+
+      res.status(200).json({
+        userData,
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  }
+)
+
+router.get(
+  '/user',
+  authMiddleware,
+  async function getUsers(req, res) {
+    try {
+      const email = req.payload.email
+      const user = await User.findOne({ email })
+
+      res.json({
+        user,
+      })
+    } catch (error) {
+      console.log(error)
       return res
         .status(403)
         .json({ message: 'пользователь не авторизован' })
     }
-
-    //тут id и email пользователя
-    const payload = jwt.verify(
-      token,
-      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
-    )
-    // const user = await User.findOne({ payload.email })
-    const email = payload.email
-    const user = await User.findOne({ email })
-
-    res.json({
-      user,
-    })
-  } catch (error) {
-    console.log(error)
-    return res
-      .status(403)
-      .json({ message: 'пользователь не авторизован' })
   }
-})
+)
 
-router.get('/articles', async function (req, res) {
-  try {
-    const token = req.headers.authorization.split(' ')[1]
-    if (!token) {
-      return res
-        .status(403)
-        .json({ message: 'пользователь не авторизован' })
+router.get(
+  '/articles',
+  authMiddleware,
+  async function (req, res) {
+    try {
+      const email = req.payload.email
+      const user = await User.findOne({ email })
+      const { userData } = user
+
+      res.status(200).json({
+        userData,
+      })
+    } catch (error) {
+      return res.status(403).json({
+        message: 'error',
+      })
     }
-
-    //тут id и email пользователя
-    const payload = jwt.verify(
-      token,
-      'hhndndhcyhcjcjmn364734673g5hj565jgb6'
-    )
-    // const user = await User.findOne({ payload.email })
-    const email = payload.email
-    const user = await User.findOne({ email })
-    const { userData } = user
-
-    res.status(200).json({
-      userData,
-    })
-  } catch (error) {
-    return res.status(403).json({
-      message: 'error',
-    })
   }
-})
+)
 
 module.exports = router
